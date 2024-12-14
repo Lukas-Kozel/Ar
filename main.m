@@ -250,3 +250,177 @@ axis equal;
 %regulátor:
 %ki = 0.001087
 %kp = 0.01134
+%% PID lab regulátor
+
+ki = 0.001087;
+kp = 0.01134;
+% ki=1.5;
+% kp = 1.311;
+
+C = kp + ki/s;
+L = P0_nominal * C;
+L_uzavr = L/(1 + L);
+
+figure;
+step(L_uzavr);
+title('Jednotkový skok regulovaného systému');
+grid on;
+
+% || W2*T0_reg || < 1
+T0_reg = L/(1+L);
+W2T0_reg_norm = norm(W2 * T0_reg, inf);
+fprintf('|| W2*T0_reg ||_inf = %.4f\n\n', W2T0_reg_norm);
+
+
+% || W2*S0_reg || < 1
+S0_reg = 1/(1+L);
+W2S0_reg_norm = norm(W2 * S0_reg, inf);
+fprintf('|| W2*S0_reg ||_inf = %.4f\n\n', W2S0_reg_norm);
+
+
+f = logspace(-2,4,10000);
+S0_reg_FRS_reg = freqresp(S0_reg, f); 
+AS0_reg = (abs(squeeze(S0_reg_FRS_reg))); 
+T0_reg_FRS_reg = freqresp(T0_reg, f); 
+AT0_reg = (abs(squeeze(T0_reg_FRS_reg)));
+
+
+W2T0_reg_FRS_reg = freqresp(W2*T0_reg, f); 
+AW2T0_reg = (abs(squeeze(W2T0_reg_FRS_reg)));
+W1S0_reg_FRS_reg = freqresp(W1*S0_reg, f); 
+AW1S0_reg = (abs(squeeze(W1S0_reg_FRS_reg)));
+
+
+figure
+semilogx(f, squeeze(S0_reg_FRS_reg))
+hold on
+semilogx(f, AW1m1)
+title('Frekvenční charakteristika citlivostní funkce S_0 a W_1^{-1}')
+legend('S_0','W_1^{-1}')
+grid
+
+% bode diagram S0_reg a 1/W1
+figure
+hold on
+bodemag(S0_reg)
+bodemag(1/W1)
+legend('S_0','W_1^{-1}')
+grid
+
+% bode diagram W1*S0_reg
+figure
+hold on
+bodemag(W1*S0_reg)
+legend('S_0 W_1^{-1}')
+grid
+
+
+
+
+% bode diagram |W_1S_0| + |W_2T_0|
+figure
+semilogx(f, AW1S0_reg + AW2T0_reg)
+title('Frekvenční charakteristika |W_1 S_0| + |W_2 T_0|')
+legend('|W_1 S_0| + |W_2 T_0|')
+grid
+
+normAW1S_AW2_reg = norm( AW1S0_reg + AW2T0_reg, inf);
+fprintf('|| |W_1*S| + |W_2*T| ||_inf = %.4f\n\n', normAW1S_AW2_reg);
+
+%%
+figure;
+nyquist(L)
+
+figure
+nyquiststability((L.Numerator{1}),(L.Denominator{1}),0.1)
+
+
+%% regulátor  matlab
+nmeas = 1; % Number of measured outputs (y)
+ncont = 1; % Number of control inputs (u)
+P = augw(P0_nominal,W1,W2,0);
+fprintf('Regulátor matlab: \n\n');
+
+[K_hinf, CL, gamma] = hinfsyn(P, nmeas, ncont);
+
+L_hinf = P0_nominal * K_hinf; % Open-loop transfer function
+T_hinf = feedback(L_hinf, 1); % Closed-loop transfer function
+
+% Plot Step Response
+figure;
+step(T_hinf);
+title('Jednotkový skok regulovaného systému');
+grid on;
+% Nyquist Plot for Stability Check
+figure;
+nyquist(L_hinf);
+title('Nyquist Diagram of Open-Loop Transfer Function');
+grid on;
+
+
+[b,a] = ss2tf(L_hinf.A, L_hinf.B, L_hinf.C, L_hinf.D);
+L_Hinf = tf(b, a);
+
+
+% || W2*T0_reg || < 1
+T0_reg_matlab = L_Hinf/(1+L_Hinf);
+W2T0_reg_norm_matlab = norm(W2 * T0_reg_matlab, inf);
+fprintf('|| W2*T0_reg ||_inf = %.4f\n\n', W2T0_reg_norm_matlab);
+
+
+% || W2*S0_reg || < 1
+S0_reg_matlab = 1/(1+L_Hinf);
+W2S0_reg_norm_matlab = norm(W2 * S0_reg_matlab, inf);
+fprintf('|| W2*S0_reg ||_inf = %.4f\n\n', W2S0_reg_norm_matlab);
+
+
+f = logspace(-2,4,10000);
+S0_reg_FRS_reg_matlab = freqresp(S0_reg_matlab, f); 
+AS0_reg_matlab = (abs(squeeze(S0_reg_FRS_reg_matlab))); 
+T0_reg_FRS_reg_matlab = freqresp(T0_reg_matlab, f); 
+AT0_reg_matlab = (abs(squeeze(T0_reg_FRS_reg_matlab)));
+
+
+W2T0_reg_FRS_reg_matlab = freqresp(W2*T0_reg_matlab, f); 
+AW2T0_reg_matlab = (abs(squeeze(W2T0_reg_FRS_reg_matlab)));
+W1S0_reg_FRS_reg_matlab = freqresp(W1*S0_reg_matlab, f); 
+AW1S0_reg_matlab = (abs(squeeze(W1S0_reg_FRS_reg_matlab)));
+
+
+figure
+semilogx(f, squeeze(S0_reg_FRS_reg_matlab))
+hold on
+semilogx(f, AW1m1)
+title('Frekvenční charakteristika citlivostní funkce S_0 a W_1^{-1}')
+legend('S_0','W_1^{-1}')
+grid
+
+% bode diagram S0_reg a 1/W1
+figure
+hold on
+bodemag(S0_reg_matlab)
+bodemag(1/W1)
+legend('S_0','W_1^{-1}')
+grid
+
+% bode diagram W1*S0_reg
+figure
+hold on
+bodemag(W1*S0_reg_matlab)
+legend('S_0 W_1^{-1}')
+grid
+
+
+
+% bode diagram |W_1S_0| + |W_2T_0|
+figure
+semilogx(f, AW1S0_reg_matlab + AW2T0_reg_matlab)
+title('Frekvenční charakteristika |W_1 S_0| + |W_2 T_0|')
+legend('|W_1 S_0| + |W_2 T_0|')
+grid
+
+normAW1S_AW2_reg = norm( AW1S0_reg_matlab + AW2T0_reg_matlab, inf);
+fprintf('|| |W_1*S| + |W_2*T| ||_inf = %.4f\n\n', normAW1S_AW2_reg);
+
+figure
+nyquiststability((L_Hinf.Numerator{1}),(L_Hinf.Denominator{1}),0.1)

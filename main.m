@@ -23,9 +23,9 @@ grid on;
 
 %% funguje
 % derivacni clanek
-K = 0.3;
+K = 0.9;
 Td = 0.9;
-alpha = 10;
+alpha = 20;
 Ti = Td/alpha;
 
 W1_inv = K*(Td*s+1)/(Ti*s+1)
@@ -62,6 +62,7 @@ title('Frekvenční charakteristika: W1 * S\_uncertain', 'FontSize', 14);
 legend({'W1 * S\_uncertain'}, 'FontSize', 10, 'Location', 'Best');
 set(gca, 'FontSize', 12);
 
+
 %%
 % Define uncertain parameters
 K_uncertain = ureal('K', 20, 'Percentage', 15);  
@@ -79,6 +80,10 @@ P0_uncertain = K_uncertain / ((T1_uncertain * s + 1) * (T2_uncertain * s + 1));
 [~, worstCaseModel] = wcgain(P0_uncertain);
 P0_worst = worstCaseModel.K / ((worstCaseModel.T1 * s + 1) * (worstCaseModel.T2* s + 1));
 
+figure;
+bode(P0_uncertain)
+grid on;
+legend("$\mathcal{P}$",Interpreter="latex")
 % Plot Bode plots for the nominal and worst-case models
 figure;
 bode(P0_nominal);
@@ -87,8 +92,8 @@ bode(P0_worst);
 grid on;
 
 % Add legend for clarity
-legend('Nominal Model', 'Worst-case Model');
-title('Bode Plot: Nominal vs Worst-case Transfer Function');
+legend('P0', 'P1');
+title('Bodeho diagram');
 
 W2 = P0_worst/P0_nominal -1
 
@@ -107,17 +112,37 @@ hold on;
 bode(W2*T)
 bode(W1*S+W2*T)
 grid on;
-figure;
-nyquist(Pmin)
-hold on;
-nyquist(Pmax)
-nyquist(P0_nominal)
 
+
+% Nyquist Plot
 figure;
-bode(Pmin)
+nyquist(Pmin, 'b'); % Pmin - modrá
 hold on;
-bode(Pmax)
-bode(P0_nominal)
+nyquist(Pmax, 'g'); % Pmax - zelená
+nyquist(P0_nominal, 'r--'); % P0_nominal - červená
+grid on;
+
+% Přidání legendy
+legend({'P_{min}', 'P_{max}', 'P_{0}'}, 'Interpreter', 'latex', 'FontSize', 12, 'Location', 'Best');
+title('Nyquistův diagram', 'FontSize', 14);
+xlabel('Re', 'FontSize', 12);
+ylabel('Im', 'FontSize', 12);
+axis equal;
+hold off;
+
+% Bode Plot
+figure;
+bode(Pmin, 'b'); % Pmin - modrá
+hold on;
+bode(Pmax, 'g'); % Pmax - zelená
+bode(P0_nominal, 'r--'); % P0_nominal - červená
+grid on;
+
+% Přidání legendy
+legend({'P_{min}', 'P_{max}', 'P_{0}'}, 'Interpreter', 'latex', 'FontSize', 12, 'Location', 'Best');
+title('Bodeho diagram', 'FontSize', 14);
+hold off;
+
 
 
 figure;
@@ -187,14 +212,6 @@ figure;
 nyquist(P0_nominal, 'b--'); % Nominal model in dashed blue
 hold on;
 
-% Adjust the Nyquist plot limits dynamically
-% x_min = min(real(nyquist_points)) - max(W2_radii);
-% x_max = max(real(nyquist_points)) + max(W2_radii);
-% y_min = min(imag(nyquist_points)) - max(W2_radii);
-% y_max = max(imag(nyquist_points)) + max(W2_radii);
-% xlim([x_min, x_max]);
-% ylim([y_min, y_max]);
-
 % Plot circles for uncertainty at each frequency
 for f = 1:length(frequencies)
     freq = frequencies(f);
@@ -224,3 +241,12 @@ ylabel('Imaginary Axis');
 axis equal;
 
 
+%random nalezený regulátor, který nesplňuje robustnost ve stabilitě:
+%ki=1.5
+%kp = 1.311
+
+
+%random nalezený, který má gm skoro inf a Pm má 102, takže ready
+%regulátor:
+%ki = 0.001087
+%kp = 0.01134

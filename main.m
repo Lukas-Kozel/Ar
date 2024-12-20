@@ -23,9 +23,9 @@ grid on;
 
 %% funguje
 % derivacni clanek
-K = 0.9;
-Td = 0.9;
-alpha = 20;
+K = 0.5;
+Td = 0.8;
+alpha = 13;
 Ti = Td/alpha;
 
 W1_inv = K*(Td*s+1)/(Ti*s+1)
@@ -44,7 +44,7 @@ set(gca, 'FontSize', 12);
 hold off;
 
 % Aktualizace W1_inv a výpočet W1
-W1 = inv(W1_inv);
+W1 = inv(W1_inv)
 
 % Výpočet normy H∞
 disp('H∞ norma:');
@@ -256,6 +256,14 @@ ki = 0.001087;
 kp = 0.01134;
 % ki=1.5;
 % kp = 1.311;
+
+%funkcni nalezen pidlabem 
+ki=0.07513
+kp=0.09077
+
+%funkcni - nalezen rucne v hinf regionu
+ki = 0.3
+kp = 0.17
 
 C = kp + ki/s;
 L = P0_nominal * C;

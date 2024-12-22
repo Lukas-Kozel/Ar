@@ -29,17 +29,15 @@ alpha = 13;
 Ti = Td/alpha;
 
 W1_inv = K*(Td*s+1)/(Ti*s+1)
-
+S=1/(1+P0_nominal);
 % První graf: Frekvenční charakteristiky W1_inv a S_uncertain
 figure;
 hold on;
 bodemag(W1_inv); % Gain * W1_inv - červená
-bodemag(S_uncertain); % S_uncertain - modrá
+bodemag(S); % S_uncertain - modrá
 grid on;
-xlabel('Frekvence [rad/s]', 'FontSize', 12);
-ylabel('Zisk [dB]', 'FontSize', 12);
-title('Frekvenční charakteristika: W1\_inv a S\_uncertain', 'FontSize', 14);
-legend({'W1\_inv', 'S\_uncertain'}, 'FontSize', 10, 'Location', 'Best');
+title('Frekvenční charakteristika: W1\_inv a S', 'FontSize', 14);
+legend({'W1\_inv', 'S'}, 'FontSize', 10, 'Location', 'Best');
 set(gca, 'FontSize', 12);
 hold off;
 
@@ -252,18 +250,22 @@ axis equal;
 %kp = 0.01134
 %% PID lab regulátor
 
-ki = 0.001087;
-kp = 0.01134;
-% ki=1.5;
-% kp = 1.311;
-
-%funkcni nalezen pidlabem 
-ki=0.07513
-kp=0.09077
+% % % % % % ki = 0.001087;
+% % % % % % kp = 0.01134;
+% % % % % % % ki=1.5;
+% % % % % % % kp = 1.311;
+% % % % % % 
+% % % % % % %funkcni nalezen pidlabem 
+% % % % % % ki=0.07513
+% % % % % % kp=0.09077
 
 %funkcni - nalezen rucne v hinf regionu
-ki = 0.3
-kp = 0.17
+%ki = 0.3
+%kp = 0.17
+
+%retardovany, ale potrebuju grafy xd:
+ki = 0.6329
+kp = 0.439
 
 C = kp + ki/s;
 L = P0_nominal * C;
@@ -324,13 +326,20 @@ grid
 
 
 
-
 % bode diagram |W_1S_0| + |W_2T_0|
-figure
-semilogx(f, AW1S0_reg + AW2T0_reg)
-title('Frekvenční charakteristika |W_1 S_0| + |W_2 T_0|')
-legend('|W_1 S_0| + |W_2 T_0|')
-grid
+figure;
+semilogx(f, AW1S0_reg + AW2T0_reg, 'b', 'LineWidth', 1.5); % Součet |W_1 S_0| + |W_2 T_0|
+hold on;
+semilogx(f, AW1S0_reg, 'r--', 'LineWidth', 1.5); % |W_1 S_0|
+semilogx(f, AW2T0_reg, 'g-.', 'LineWidth', 1.5); % |W_2 T_0|
+
+% Nastavení grafu
+title('Frekvenční charakteristika', 'FontSize', 14);
+xlabel('Frekvence [rad/s]', 'FontSize', 12);
+ylabel('Hodnota', 'FontSize', 12);
+legend({'|W_1 S_0| + |W_2 T_0|', '|W_1 S_0|', '|W_2 T_0|'}, ...
+       'FontSize', 10, 'Location', 'Best');
+grid on;
 
 normAW1S_AW2_reg = norm( AW1S0_reg + AW2T0_reg, inf);
 fprintf('|| |W_1*S| + |W_2*T| ||_inf = %.4f\n\n', normAW1S_AW2_reg);

@@ -1,8 +1,8 @@
- close all; clear all; clc;
+% close all; clear all; clc;
 perc = 40;
 % r = ureal('r', 0.25, 'Mode', 'Range', 'Percentage', perc);
 % P = tf([r], [0.0475 0.1 1.5*10*0.05]);
-C = 1;% C = tf([20 20*25], [1 300]);
+%C = 1;% C = tf([20 20*25], [1 300]);
 % P0 = tf(P.Nominal);
 
 K_uncertain = ureal('K', 20, 'Percentage', 15);  
@@ -14,7 +14,7 @@ s = tf('s');
 
 P0_nominal = 20/((0.2*s+1)*(0.4*s+1))
 P0 = K_uncertain / ((T1_uncertain * s + 1) * (T2_uncertain * s + 1));
-
+P0=P0_nominal
 
 % uzavreny system s nominalni prenosem
 % T = P0*C/(1 + P0*C);
@@ -73,7 +73,7 @@ grid
 
 %%
 % vahova funkce W2, robustni stabilita - test
-W2 = tf(perc/100);
+%W2 = tf(perc/100);
 W2T = minreal(W2*T);
 
 FRT = freqresp(T, f); % frekvencni odezva komplementarni citlivosti
@@ -132,21 +132,43 @@ legend('|W_1S| + |W_2T|');
 grid
 
 %%
-% otevrena smycka
-L = minreal(P0*C);
-FRL = squeeze(freqresp(L, f)); % frekvencni odezva otevrene smycky
-iL = real(FRL);
-rL = imag(FRL);
-plot(rL, iL)
+% Definice parametrů
+L = minreal(P0 * C); % Přenos otevřené smyčky
+FRL = squeeze(freqresp(L, f)); % Frekvenční odezva otevřené smyčky
+iL = imag(FRL); % Imaginární část
+rL = real(FRL); % Reálná část
+
+% Nyquistův diagram
+figure;
+plot(rL, iL, 'b--', 'LineWidth', 1.5); % Nyquistova křivka pro P0
 hold on;
 
-[A,i] = max(AW1S + AW2T);
-%i = 5500;
-kruh1 = -1+AW1(i)*exp(1j*(-2*pi:0.01:2*pi));
-plot(kruh1)
+% Výpočet kruhu1 a jeho umístění na bod -1
+[A, i] = max(AW1S + AW2T); % Najít index pro maximum
+i = 5033; % Vybraný index (dle zadání)
+kruh1 = -1 + AW1(i) * exp(1j * (-2 * pi:0.01:2 * pi)); % Definice kruhu1
+plot(real(kruh1), imag(kruh1), 'g-', 'LineWidth', 1.5); % Kruh1 zeleně
 
-W2L = W2*L;
-FRW2L = freqresp(W2L, f); % frekvencni odezva funkce W2*L
-AW2L = (abs(squeeze(FRW2L))); % AFCH funkce L*W2
-kruh2 = FRL(i) + AW2L(i)*exp(1j*(-2*pi:0.01:2*pi));
-plot(kruh2)
+% Výpočet kruhu2 a jeho umístění na příslušnou pozici na L
+W2L = W2 * L; % Funkce W2*L
+FRW2L = freqresp(W2L, f); % Frekvenční odezva W2*L
+AW2L = abs(squeeze(FRW2L)); % AFCH funkce W2*L
+kruh2 = FRL(i) + AW2L(i) * exp(1j * (-2 * pi:0.01:2 * pi)); % Definice kruhu2
+plot(real(kruh2), imag(kruh2), 'r-', 'LineWidth', 1.5); % Kruh2 červeně
+
+% Přidání bodů středu kruhů
+plot(-1, 0, 'gx', 'MarkerSize', 8, 'LineWidth', 1.5); % Střed kruhu1 (-1, 0)
+text(-1.1, 0.1, 'r=|W1|', 'FontSize', 10, 'HorizontalAlignment', 'right', 'Color', 'g');
+
+plot(real(FRL(i)), imag(FRL(i)), 'rx', 'MarkerSize', 8, 'LineWidth', 1.5); % Střed kruhu2
+text(real(FRL(i)) - 0.1, imag(FRL(i)) - 0.1, 'r=|W2L0|', 'FontSize', 10, 'HorizontalAlignment', 'right', 'Color', 'r');
+
+% Nastavení grafu
+title('Nyquist Diagram', 'FontSize', 14);
+xlabel('Real Axis', 'FontSize', 12);
+ylabel('Imaginary Axis', 'FontSize', 12);
+legend({'L0', 'r=|W1|', 'r=|W2L0|'}, 'FontSize', 10, 'Location', 'Best');
+grid on;
+axis equal;
+hold off;
+

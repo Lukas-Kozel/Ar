@@ -363,6 +363,10 @@ fprintf('Regulátor matlab: \n\n');
 L_hinf = P0_nominal * K_hinf; % Open-loop transfer function
 T_hinf = feedback(L_hinf, 1); % Closed-loop transfer function
 
+[b,a] = ss2tf(K_hinf.A, K_hinf.B, K_hinf.C, K_hinf.D);
+K_Hinf = tf(b, a);
+
+
 % Plot Step Response
 figure;
 step(T_hinf);
@@ -430,11 +434,26 @@ grid
 
 
 % bode diagram |W_1S_0| + |W_2T_0|
-figure
-semilogx(f, AW1S0_reg_matlab + AW2T0_reg_matlab)
-title('Frekvenční charakteristika |W_1 S_0| + |W_2 T_0|')
-legend('|W_1 S_0| + |W_2 T_0|')
-grid
+% figure
+% semilogx(f, AW1S0_reg_matlab + AW2T0_reg_matlab)
+% title('Frekvenční charakteristika |W_1 S_0| + |W_2 T_0|')
+% legend('|W_1 S_0| + |W_2 T_0|')
+% grid
+
+% bode diagram |W_1S_0| + |W_2T_0|
+figure;
+semilogx(f, AW1S0_reg_matlab + AW2T0_reg_matlab, 'b', 'LineWidth', 1.5); % Součet |W_1 S_0| + |W_2 T_0|
+hold on;
+semilogx(f, AW1S0_reg_matlab, 'r--', 'LineWidth', 1.5); % |W_1 S_0|
+semilogx(f, AW2T0_reg_matlab, 'g-.', 'LineWidth', 1.5); % |W_2 T_0|
+
+% Nastavení grafu
+title('Frekvenční charakteristika', 'FontSize', 14);
+xlabel('Frekvence [rad/s]', 'FontSize', 12);
+ylabel('Hodnota', 'FontSize', 12);
+legend({'|W_1 S_0| + |W_2 T_0|', '|W_1 S_0|', '|W_2 T_0|'}, ...
+       'FontSize', 10, 'Location', 'Best');
+grid on;
 
 normAW1S_AW2_reg = norm( AW1S0_reg_matlab + AW2T0_reg_matlab, inf);
 fprintf('|| |W_1*S| + |W_2*T| ||_inf = %.4f\n\n', normAW1S_AW2_reg);

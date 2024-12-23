@@ -200,3 +200,141 @@ AW2L = (abs(squeeze(FRW2L))); % AFCH funkce L*W2
 kruh2 = FRL(i) + AW2L(i)*exp(1j*(-2*pi:0.01:2*pi));
 plot(kruh2)
 
+
+
+%% Matlab regulator plot
+
+f = logspace(-2, 4, 10000); % Frekvence od 10^-2 do 10^4 rad/s
+
+% bode diagram |W_1S_0| + |W_2T_0|
+figure;
+semilogx(f, AW1S0_reg_matlab + AW2T0_reg_matlab, 'b', 'LineWidth', 1.5); % Součet |W_1 S_0| + |W_2 T_0|
+hold on;
+semilogx(f, AW1S0_reg_matlab, 'r--', 'LineWidth', 1.5); % |W_1 S_0|
+semilogx(f, AW2T0_reg_matlab, 'g-.', 'LineWidth', 1.5); % |W_2 T_0|
+
+% Nastavení grafu
+title('Frekvenční charakteristika', 'FontSize', 14);
+xlabel('Frekvence [rad/s]', 'FontSize', 12);
+ylabel('Hodnota', 'FontSize', 12);
+legend({'|W_1 S_0| + |W_2 T_0|', '|W_1 S_0|', '|W_2 T_0|'}, ...
+       'FontSize', 10, 'Location', 'Best');
+grid on;
+
+normAW1S_AW2_reg = norm( AW1S0_reg_matlab + AW2T0_reg_matlab, inf);
+fprintf('|| |W_1*S| + |W_2*T| ||_inf = %.4f\n\n', normAW1S_AW2_reg);
+
+
+
+
+L_hinf = P0_nominal * K_hinf; % Open-loop transfer function
+T_hinf = feedback(L_hinf, 1); % Closed-loop transfer function
+[b,a] = ss2tf(L_hinf.A, L_hinf.B, L_hinf.C, L_hinf.D);
+L_Hinf = tf(b, a);
+
+
+
+T0_reg_matlab = L_Hinf/(1+L_Hinf);
+S0_reg_matlab = 1/(1+L_Hinf);
+
+% Frekvenční odezva T0 a S0
+[mag_T0, ~, omega] = bode(T0_reg_matlab, f); % Magnituda T0 (linear), fáze a frekvence
+[mag_S0, ~, ~] = bode(S0_reg_matlab, f);     % Magnituda S0 (linear)
+mag_T0 = squeeze(mag_T0);         % Převod na vektor
+mag_S0 = squeeze(mag_S0);         % Převod na vektor
+
+% Převod na decibely
+mag_T0_dB = 20 * log10(mag_T0);
+mag_S0_dB = 20 * log10(mag_S0);
+
+% Najít frekvenci, kde |T0| = -3 dB
+target_dB = -3; % Hodnota v dB
+[~, idx] = min(abs(mag_T0_dB - target_dB)); % Index nejbližší hodnoty k -3 dB
+omega_c = omega(idx); % Frekvence
+
+% Vykreslení grafu
+figure;
+
+% T0 modře
+semilogx(omega, mag_T0_dB, 'b-', 'LineWidth', 1.5); % T0 funkce
+hold on;
+
+% S0 zeleně
+semilogx(omega, mag_S0_dB, 'g-', 'LineWidth', 1.5); % S0 funkce
+
+% Horizontální červená přerušovaná čára na -3 dB
+line([min(omega) max(omega)], [target_dB target_dB], 'Color', 'r', 'LineStyle', '--', 'LineWidth', 1.5);
+
+% Černý bod na omega_c
+plot(omega_c, mag_T0_dB(idx), 'ko', 'MarkerSize', 8, 'MarkerFaceColor', 'k');
+text(omega_c, mag_T0_dB(idx) - 5, sprintf('\\omega_c = %.4f rad/s', omega_c), ...
+    'FontSize', 10, 'HorizontalAlignment', 'center', 'Color', 'k');
+
+% Nastavení grafu
+title('Bodeho diagram', 'FontSize', 14);
+legend({'T_0', 'S_0', '-3 dB', '\omega_c '}, ...
+       'FontSize', 10, 'Location', 'Best');
+grid on;
+hold off;
+
+
+figure
+hold on;
+FRL = squeeze(freqresp(L_Hinf, f)); % Frekvenční odezva otevřené smyčky
+iL = imag(FRL); % Imaginární část
+rL = real(FRL); % Reálná část
+plot(rL, iL, 'b--', 'LineWidth', 1.5); % Nyquistova křivka pro P0
+
+% Výpočet kruhu1 a jeho umístění na bod -1
+[A, i] = max(AW1S0_reg_matlab + AW2T0_reg_matlab); % Najít index pro maximum
+% i = 5033; % Vybraný index (dle zadání)
+kruh1 = -1 + AW1(i) * exp(1j * (-2 * pi:0.01:2 * pi)); % Definice kruhu1
+plot(real(kruh1), imag(kruh1), 'g-', 'LineWidth', 1.5); % Kruh1 zeleně
+% Výpočet kruhu2 a jeho umístění na příslušnou pozici na L
+W2L = W2 * L_Hinf; % Funkce W2*L
+FRW2L = freqresp(W2L, f); % Frekvenční odezva W2*L
+AW2L = abs(squeeze(FRW2L)); % AFCH funkce W2*L
+kruh2 = FRL(i) + AW2L(i) * exp(1j * (-2 * pi:0.01:2 * pi)); % Definice kruhu2
+plot(real(kruh2), imag(kruh2), 'r-', 'LineWidth', 1.5); % Kruh2 červeně
+% Přidání bodů středu kruhů
+plot(-1, 0, 'gx', 'MarkerSize', 8, 'LineWidth', 1.5); % Střed kruhu1 (-1, 0)
+text(-1.1, 0.1, 'r=|W1|', 'FontSize', 10, 'HorizontalAlignment', 'right', 'Color', 'g');
+plot(real(FRL(i)), imag(FRL(i)), 'rx', 'MarkerSize', 8, 'LineWidth', 1.5); % Střed kruhu2
+text(real(FRL(i)) - 0.1, imag(FRL(i)) - 0.1, 'r=|W2L0|', 'FontSize', 10, 'HorizontalAlignment', 'right', 'Color', 'r');
+% Nastavení grafu
+title('Nyquist Diagram', 'FontSize', 14);
+xlabel('Real Axis', 'FontSize', 12);
+ylabel('Imaginary Axis', 'FontSize', 12);
+legend({'L0', 'r=|W1|', 'r=|W2L0|'}, 'FontSize', 10, 'Location', 'Best');
+grid on;
+axis equal;
+box on;
+hold off;
+
+%%
+% Frekvenční rozsah
+f = logspace(-2,4,10000);
+figure
+semilogx(f, AW1S0_reg_matlab + AW2T0_reg_matlab, 'b', 'LineWidth', 1.5); % Součet |W_1 S_0| + |W_2 T_0|
+hold on;
+
+semilogx(f, AW1S0_reg_matlab, 'r', 'LineWidth', 1.5); % |W_1 S_0|
+semilogx(f, AW2T0_reg_matlab, 'g', 'LineWidth', 1.5); % |W_2 T_0|
+% Najít frekvenci w, kde |W_1 S_0| + |W_2 T_0| dosahuje nejvyšší hodnoty
+[max_value, max_index] = max(AW1S0_reg_matlab + AW2T0_reg_matlab); % Nejvyšší hodnota a její index
+max_frequency = f(max_index); % Odpovídající frekvence
+
+% Přidání vertikální osy
+line([max_frequency max_frequency], [0 max_value], 'Color', 'r', 'LineStyle', '--', 'LineWidth', 1.5); % Vertikální čára
+text(max_frequency, max_value, ...
+    sprintf('\\omega = %.2f, max = %.4f', max_frequency, max_value), ...
+    'FontSize', 10, 'HorizontalAlignment', 'right', 'VerticalAlignment', 'bottom');
+
+% Nastavení grafu
+title('Frekvenční charakteristika', 'FontSize', 14);
+xlabel('Frekvence [rad/s]', 'FontSize', 12);
+ylabel('Hodnota', 'FontSize', 12);
+legend({'|W_1 S_0| + |W_2 T_0|','|W_1 S_0|', '|W_2 T_0|', '\omega_{max}'}, ...
+       'FontSize', 10, 'Location', 'Best');
+grid on;
+

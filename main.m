@@ -260,12 +260,12 @@ axis equal;
 % % % % % % kp=0.09077
 
 %funkcni - nalezen rucne v hinf regionu
-%ki = 0.3
-%kp = 0.17
+ki = 0.3
+kp = 0.17
 
 %retardovany, ale potrebuju grafy xd:
-ki = 0.6329
-kp = 0.439
+% ki = 0.6329
+% kp = 0.439
 
 C = kp + ki/s;
 L = P0_nominal * C;

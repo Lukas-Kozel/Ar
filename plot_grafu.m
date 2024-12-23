@@ -338,3 +338,224 @@ legend({'|W_1 S_0| + |W_2 T_0|','|W_1 S_0|', '|W_2 T_0|', '\omega_{max}'}, ...
        'FontSize', 10, 'Location', 'Best');
 grid on;
 
+
+%% porovnani regulatoru
+
+figure;
+hold on
+step(T_hinf);
+step(L_uzavr);
+title('Porovnání jednotkových skoků regulovaných systémů');
+grid on;
+
+T0_reg_matlab = T_hinf;
+
+% Frekvenční odezva T0 a S0
+[mag_T0, ~, omega] = bode(T0_reg_matlab, f); % Magnituda T0 (linear), fáze a frekvence
+mag_T0 = squeeze(mag_T0);         % Převod na vektor
+       % Převod na vektor
+
+% Převod na decibely
+mag_T0_dB = 20 * log10(mag_T0);
+
+% Najít frekvenci, kde |T0| = -3 dB
+target_dB = -3; % Hodnota v dB
+[~, idx] = min(abs(mag_T0_dB - target_dB)); % Index nejbližší hodnoty k -3 dB
+omega_c = omega(idx); % Frekvence
+
+% Vykreslení grafu
+figure;
+
+% T0 modře
+semilogx(omega, mag_T0_dB, 'b-', 'LineWidth', 1.5); % T0 funkce
+hold on;
+
+% Horizontální červená přerušovaná čára na -3 dB
+line([min(omega) max(omega)], [target_dB target_dB], 'Color', 'r', 'LineStyle', '--', 'LineWidth', 1.5);
+
+% Černý bod na omega_c
+plot(omega_c, mag_T0_dB(idx), 'ko', 'MarkerSize', 8, 'MarkerFaceColor', 'k');
+text(omega_c, mag_T0_dB(idx) - 5, sprintf('\\omega_c = %.4f rad/s', omega_c), ...
+    'FontSize', 10, 'HorizontalAlignment', 'center', 'Color', 'k');
+
+% Nastavení grafu
+title('Bodeho diagram', 'FontSize', 14);
+legend({'T_0', '-3 dB', '\omega_c '}, ...
+       'FontSize', 10, 'Location', 'Best');
+grid on;
+hold off;
+
+
+T0_reg_matlab = L_uzavr;
+
+% Frekvenční odezva T0 a S0
+[mag_T0, ~, omega] = bode(T0_reg_matlab, f); % Magnituda T0 (linear), fáze a frekvence
+mag_T0 = squeeze(mag_T0);         % Převod na vektor
+       % Převod na vektor
+
+% Převod na decibely
+mag_T0_dB = 20 * log10(mag_T0);
+
+% Najít frekvenci, kde |T0| = -3 dB
+target_dB = -3; % Hodnota v dB
+[~, idx] = min(abs(mag_T0_dB - target_dB)); % Index nejbližší hodnoty k -3 dB
+omega_c = omega(idx); % Frekvence
+
+% Vykreslení grafu
+figure;
+
+% T0 modře
+semilogx(omega, mag_T0_dB, 'b-', 'LineWidth', 1.5); % T0 funkce
+hold on;
+
+% Horizontální červená přerušovaná čára na -3 dB
+line([min(omega) max(omega)], [target_dB target_dB], 'Color', 'r', 'LineStyle', '--', 'LineWidth', 1.5);
+
+% Černý bod na omega_c
+plot(omega_c, mag_T0_dB(idx), 'ko', 'MarkerSize', 8, 'MarkerFaceColor', 'k');
+text(omega_c, mag_T0_dB(idx) - 5, sprintf('\\omega_c = %.4f rad/s', omega_c), ...
+    'FontSize', 10, 'HorizontalAlignment', 'center', 'Color', 'k');
+
+% Nastavení grafu
+title('Bodeho diagram', 'FontSize', 14);
+legend({'T_0', '-3 dB', '\omega_c '}, ...
+       'FontSize', 10, 'Location', 'Best');
+grid on;
+hold off;
+
+
+
+% Nyquist Plot for Stability Check
+figure;
+nyquist(L_hinf);
+title('Nyquist Diagram of Open-Loop Transfer Function');
+grid on;
+
+figure;
+nyquiststability((L.Numerator{1}),(L.Denominator{1}),0.1)
+title('Nyquist Diagram of Open-Loop Transfer Function');
+grid on;
+
+
+
+
+%% 1) Definice přenosů systému
+s = tf('s');
+
+% a) Přenos regulovaného objektu G(s):
+G = P0_nominal;  % Očekává se, že máte tuhle proměnnou v workspace (např. 2. řád apod.)
+
+% b) 1. regulátor (z PIDlab)
+C1 = C;   % Regulátor navržený v PIDlab
+
+% c) 2. regulátor (z hinfsyn)
+C2 = K_Hinf;  % Regulátor navržený pomocí hinfsyn
+
+%% 2) Otevřená a uzavřená smyčka
+L1 = series(C1, G);   % Otevřená smyčka s 1. regulátorem
+L2 = series(C2, G);   % Otevřená smyčka s 2. regulátorem
+
+T1 = feedback(L1, 1); % Uzavřená smyčka (PIDlab)
+T2 = feedback(L2, 1); % Uzavřená smyčka (hinfsyn)
+
+%% 3) Zisková a fázová bezpečnost (gain margin, phase margin)
+figure('Name','Bode L1 s marginy');
+margin(L1); grid on;
+set(findall(gcf,'Type','Line'),'LineWidth',1.5);  % Zesílení čar
+title('Bodeho diagram L_1 (PIDlab)');
+
+figure('Name','Bode L2 s marginy');
+margin(L2); grid on;
+set(findall(gcf,'Type','Line'),'LineWidth',1.5);
+title('Bodeho diagram L_2 (hinfsyn)');
+
+[Gm1, Pm1, ~, ~] = margin(L1);
+[Gm2, Pm2, ~, ~] = margin(L2);
+
+disp('=====  Zisková a fázová bezpečnost  =====');
+disp('--- Regulátor 1 (PIDlab) ---');
+fprintf('   Gain margin (GM) = %.3f\n', Gm1);
+fprintf('   Phase margin (PM) = %.3f°\n', Pm1);
+
+disp('--- Regulátor 2 (hinfsyn) ---');
+fprintf('   Gain margin (GM) = %.3f\n', Gm2);
+fprintf('   Phase margin (PM) = %.3f°\n', Pm2);
+
+%% 4) Bezpečnost ve stabilitě s_m (nejmenší vzdálenost Nyquista od -1 + j0)
+figure('Name','Nyquist L1');
+nyquist(L1); 
+hold on;
+plot(-1,0,'rx','MarkerSize',8,'LineWidth',2);
+set(findall(gcf,'Type','Line'),'LineWidth',1.5);
+title('Nyquist L_1 (PIDlab)');
+axis equal; grid on;
+
+figure('Name','Nyquist L2');
+nyquist(L2); 
+hold on;
+plot(-1,0,'rx','MarkerSize',8,'LineWidth',2);
+set(findall(gcf,'Type','Line'),'LineWidth',1.5);
+title('Nyquist L_2 (hinfsyn)');
+axis equal; grid on;
+
+% Výpočet s_m pro L1
+[re1, im1] = nyquist(L1);
+re1 = squeeze(re1);
+im1 = squeeze(im1);
+
+dist1 = sqrt((re1 + 1).^2 + (im1 - 0).^2);  % vzdálenost od (-1, 0)
+s_m1 = min(dist1);
+
+% Výpočet s_m pro L2
+[re2, im2] = nyquist(L2);
+re2 = squeeze(re2);
+im2 = squeeze(im2);
+
+dist2 = sqrt((re2 + 1).^2 + (im2 - 0).^2);
+s_m2 = min(dist2);
+
+disp(' ');
+disp('=====  Stabilitní bezpečnost s_m  =====');
+disp(['   s_m (PIDlab)  = ', num2str(s_m1)]);
+disp(['   s_m (hinfsyn) = ', num2str(s_m2)]);
+
+%% 5) Porovnání kvality řízení (přechodové charakteristiky)
+figure('Name','Porovnani prechodovych odezev - PIDlab vs. hinfsyn');
+step(T1, T2);
+grid on;
+set(findall(gcf,'Type','Line'),'LineWidth',1.5);
+legend('T_1 (PIDlab)','T_2 (hinfsyn)','Location','Best');
+title('Porovnání přechodových charakteristik uzavřených smyček');
+
+% Vypsání detailů stepinfo
+S1 = stepinfo(T1);
+S2 = stepinfo(T2);
+
+disp(' ');
+disp('=====  Kvalita řízení - stepinfo  =====');
+disp('--- Regulátor 1 (PIDlab) ---');
+disp(S1);
+disp('--- Regulátor 2 (hinfsyn) ---');
+disp(S2);
+
+%% 6) Volitelné: Porovnání Nyquist a Bode v jednom grafu
+figure('Name','Porovnani Nyquist L1 a L2');
+nyquist(L1, L2);
+hold on; plot(-1,0,'rx','MarkerSize',8,'LineWidth',2);
+set(findall(gcf,'Type','Line'),'LineWidth',1.5);
+legend('L_1 (PIDlab)','L_2 (hinfsyn)','-1 + j0','Location','Best');
+axis equal; grid on;
+title('Porovnání Nyquistových charakteristik');
+
+figure('Name','Porovnani Bode L1 a L2');
+bode(L1, L2);
+grid on;
+set(findall(gcf,'Type','Line'),'LineWidth',1.5);
+legend('T_1 (PIDlab)','T_2 (hinfsyn)','Location','Best');
+title('Porovnání Bodeho diagramů');
+
+disp('Hotovo! Skript úspěšně proběhl.');
+
+
+
+
